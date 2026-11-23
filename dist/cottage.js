@@ -179,7 +179,7 @@
     bearSpawn: {x: 535, y: 321},
     morningSpawn: {x: 809, y: 225},
     spots: {
-      "home-exit": {x: 500, y: 359, area: [425, 338, 575, 408]},
+      "home-exit": {x: 500, y: 362, area: [425, 338, 575, 408], exit: {left: 428, right: 572, direction: "down"}},
       bed: {x: 834, y: 218, area: [783, 67, 909, 207]},
       decorate: {x: 463, y: 191, area: [407, 69, 523, 178]}
     },

@@ -192,7 +192,7 @@
       "orchard-apples": { x: 315, y: 232, area: [89, 33, 419, 215] },
       "orchard-roost": { x: 737, y: 207, area: [671, 73, 842, 223] },
       "orchard-brambles": { x: 125, y: 325, area: [3, 291, 114, 384] },
-      "orchard-exit": { x: 488, y: 363, area: [448, 308, 588, 408] }
+      "orchard-exit": { x: 488, y: 382, area: [448, 308, 588, 408], exit: { left: 448, right: 530, direction: "down" } }
     },
     boundary: [
       [13, 157], [42, 143], [68, 139], [89, 156], [124, 173],

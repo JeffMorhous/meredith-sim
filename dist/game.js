@@ -57,7 +57,7 @@
     el("place-name").textContent=destination.name;
     el("season").textContent=id==="interior"?"Home":"Spring";
     el("room-tools").hidden=id!=="interior";
-    map.setAttribute("aria-label",destination.name+". Walk with arrows or WASD. Tap a landmark or press E nearby to interact.");
+    map.setAttribute("aria-label",destination.name+". Walk with arrows or WASD. Walk through doorways and trail exits to travel. Tap a landmark or press E nearby to interact.");
   }
   function navigate(id,spawn){
     close(false);
@@ -170,7 +170,7 @@
     shell("bed","A good night’s rest",'<p class="note">The quilt is turned down. Bear has already picked a warm spot.</p><p class="hint-line">'+(st.completed.length?'You’ve finished '+st.completed.length+' of '+life.chores.length+' errands today. ':'')+'Rest to begin day '+(st.day+1)+'. Your cozy points and furnishings carry over.</p><button class="small-action" data-action="rest">Rest until morning</button>');
   }
   function help(){
-    shell("help","How to play",'<dl class="help-list"><dt>Walk</dt><dd>Use WASD, the arrow keys, the directional pad, or tap the ground.</dd><dt>Interact</dt><dd>Tap a landmark, or press E, Space, or the gold A button nearby.</dd><dt>Explore</dt><dd>Follow the sign on the meadow’s south path to the orchard. The cottage door leads inside. Places lets you travel directly.</dd><dt>Journal</dt><dd>Press J for today’s errands. Choose one to walk there.</dd><dt>Decorate</dt><dd>Buy something from the Furnishings shelf. Inside the cottage, choose Decorate to place, move, or store it.</dd><dt>Rest</dt><dd>Visit the bed to begin another day. Progress saves in this browser.</dd><dt>Music</dt><dd>Turn on the music button for Mere’s lo-fi soundtrack.</dd></dl><button class="small-action" data-action="close">Back to the game</button>');
+    shell("help","How to play",'<dl class="help-list"><dt>Walk</dt><dd>Use WASD, the arrow keys, the directional pad, or tap the ground.</dd><dt>Interact</dt><dd>Tap a landmark, or press E, Space, or the gold A button nearby.</dd><dt>Explore</dt><dd>Walk up the cottage steps to go inside, or down across the doormat to leave. Follow the south trail past the sign to walk between the meadow and orchard.</dd><dt>Journal</dt><dd>Press J for today’s errands. Choose one to walk there.</dd><dt>Decorate</dt><dd>Buy something from the Furnishings shelf. Inside the cottage, choose Decorate to place, move, or store it.</dd><dt>Rest</dt><dd>Visit the bed to begin another day. Progress saves in this browser.</dd><dt>Music</dt><dd>Turn on the music button for Mere’s lo-fi soundtrack.</dd></dl><button class="small-action" data-action="close">Back to the game</button>');
   }
   function visit(id){
     audio.cue("interaction");
@@ -296,7 +296,14 @@
       else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus()}
       return;
     }
-    if(dir){ev.preventDefault();if(page){if(!ev.repeat)menuDirection(dir)}else{world.hold(dir,true);document.querySelector('[data-dir="'+dir+'"]').classList.add("held")}return}
+    if(dir){
+      ev.preventDefault();
+      // Movement stays held until keyup. A repeat must not restart it after a map change.
+      if(ev.repeat)return;
+      if(page)menuDirection(dir);
+      else{world.hold(dir,true);document.querySelector('[data-dir="'+dir+'"]').classList.add("held")}
+      return;
+    }
     if(key===" "&&document.activeElement?.tagName==="BUTTON")return;
     if(["e"," ","j","escape","b"].includes(key)){
       ev.preventDefault();if(ev.repeat)return;

@@ -13,12 +13,12 @@
     bearSpawn: { x: 548, y: 264 },
     morningSpawn: { x: 241, y: 238 },
     spots: {
-      cottage: { x: 239, y: 234, area: [81, 39, 326, 221] },
+      cottage: { x: 239, y: 226, area: [81, 39, 326, 221], exit: { left: 214, right: 267, direction: "up" } },
       mailbox: { x: 342, y: 234, area: [319, 172, 360, 226] },
       garden: { x: 249, y: 301, area: [12, 251, 240, 357] },
       shop: { x: 651, y: 179, area: [573, 49, 745, 164] },
       pond: { x: 783, y: 274, area: [752, 174, 986, 279] },
-      "orchard-gate": { x: 477, y: 376, area: [450, 341, 551, 405] }
+      "orchard-gate": { x: 477, y: 382, area: [450, 341, 551, 405], exit: { left: 444, right: 516, direction: "down" } }
     },
     boundary: [[10,226],[74,220],[104,235],[204,232],[217,213],[265,215],[270,229],[322,226],[323,220],[355,225],[363,186],[394,184],[424,164],[453,172],[462,144],[518,144],[562,160],[602,176],[635,155],[684,161],[715,164],[761,134],[806,131],[825,159],[905,159],[970,167],[991,208],[985,272],[958,287],[937,320],[900,335],[866,314],[827,317],[790,341],[759,358],[727,340],[690,382],[646,402],[205,402],[123,375],[74,346],[12,310]],
     obstacles: [
@@ -162,6 +162,17 @@
 
   function spot(id) { return id==="bear" ? bear : scene.spots[id]; }
 
+  function reachedExit(before, verticalStep) {
+    for (const [id, { y, exit }] of Object.entries(scene.spots)) {
+      if (!exit || player.x < exit.left || player.x > exit.right) continue;
+      const outward = exit.direction === "up" ? -1 : 1;
+      if ((player.y - y) * outward < 0) continue;
+      const enteredFromSide = before.x < exit.left || before.x > exit.right;
+      if (verticalStep * outward > 0 || (verticalStep === 0 && enteredFromSide)) return id;
+    }
+    return null;
+  }
+
   function nearby() {
     let id = null, best = 42;
     for (const [name, landmark] of Object.entries(scene.spots)) {
@@ -254,7 +265,7 @@
     const bearHit = Math.abs(x-bear.x)<(bearMoving ? 19 : 11)
       && y>=bear.y-(bearMoving ? 27 : 39) && y<=bear.y+3;
     if (bearHit && (!target || dist(point(x,y),spot(target))>24)) target = "bear";
-    if (target && dist(player,spot(target))<(target==="bear" ? 75 : 42)) {
+    if (target && !scene.spots[target]?.exit && dist(player,spot(target))<(target==="bear" ? 75 : 42)) {
       stopWalking();
       listeners.visit(target);
     } else if (target) walkTo(target);
@@ -334,6 +345,13 @@
       if (segmentClear(player,vertical)) player.y = vertical.y;
     } else if (route.length) advance(player,route,dt*129);
     const isMoving = dist(before,player)>.001;
+    if (isMoving || dy) {
+      const exit = reachedExit(before, dy || player.y - before.y);
+      if (exit) {
+        listeners.visit(exit);
+        return;
+      }
+    }
     if (Math.abs(player.x-before.x)>.05) face = player.x>before.x ? 1 : -1;
     if (isMoving && fed() && visit!=="bear") addTrail(player);
     if (moving && !isMoving) save();
