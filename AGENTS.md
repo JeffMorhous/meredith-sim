@@ -31,7 +31,7 @@ Use `CozyLife` methods for state changes. `CozyLife.getState()` returns a snapsh
 
 Define positions in the world’s 1000 × 409 coordinate system. The landmark’s `x` and `y` mark where Mere’s feet can reach it, and its `area` is the clickable rectangle over the art. For a walk-through exit, `exit.left` and `exit.right` span the opening, `y` sets the threshold, and `exit.direction` is currently `"up"` or `"down"`.
 
-Route the landmark ID through `visit()` in `game.js`. Choose a walkable arrival spot clear of the return threshold. For a new scene, also register it in `CozyWorld.start()`, add it to the scene allowlist in `life.js`, and update the destinations and journal routing in `game.js`. For changes to Bear’s movement, check with Bear fed so he follows Mere through turns and around obstacles.
+Route the landmark ID through `visit()` in `game.js`. Choose a walkable arrival spot clear of the return threshold. For a new scene, also register it in `CozyWorld.start()`, add it to the scene allowlist in `life.js`, and update the destinations and journal routing in `game.js`. For changes to Bear’s movement, check with Bear fed so she follows Mere through turns and around obstacles.
 
 ### Refresh game assets and verify
 

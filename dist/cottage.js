@@ -2,11 +2,11 @@
   "use strict";
 
   const items = [
-    {id: "cat-bed", label: "Bear’s bed", description: "A soft rose cushion in a low wicker basket.", cost: 12},
+    {id: "cat-bed", label: "Bear’s bed", description: "Set this wicker basket by the window so Bear can watch the birds.", cost: 12},
     {id: "braided-rug", label: "Braided rug", description: "Sage and cream wool, braided by hand.", cost: 18},
-    {id: "amber-lamp", label: "Amber lamp", description: "A pleated shade that glows like late afternoon.", cost: 26},
+    {id: "amber-lamp", label: "Amber lamp", description: "A warm pool of light for a nearby reading chair.", cost: 26},
     {id: "fern-pot", label: "Potted fern", description: "A bright little fern in a blue stoneware pot.", cost: 32},
-    {id: "reading-chair", label: "Reading chair", description: "A cushioned oak chair with room for a book and a cat.", cost: 42}
+    {id: "reading-chair", label: "Reading chair", description: "Set it beside the amber lamp to read with Bear.", cost: 42}
   ].map(item => Object.freeze({...item, category: "furniture"}));
   const purchaseOutcomes = {
     "cat-bed": "Mere tucks the cushion into its wicker basket. Bear follows it with curious eyes.",
@@ -31,8 +31,19 @@
   const places = {
     "home-exit": {name: "Front door", line: "The path to the meadow is just outside."},
     bed: {name: "Mere’s bed", line: "The patchwork quilt is ready for another night."},
-    decorate: {name: "Decorating table", line: "Choose where to put the pieces you’ve brought home."}
+    decorate: {name: "Decorating table", line: "Choose where to put the pieces you’ve brought home."},
+    "home-reading": {
+      name: "Reading chair", line: "A book lies open in the lamplight. There’s room for Bear, too.",
+      action: "Read with Bear", hint: "Try the chair and lamp in neighboring spots, like Center and Bookshelf.",
+      preview: "Place it here to read with Bear."
+    },
+    "home-birds": {
+      name: "Bear’s window basket", line: "A little bird lands on the sill. Bear’s whiskers twitch.",
+      action: "Watch the birds", hint: "Put the basket at the Window for birdwatching.",
+      preview: "Place it here to watch the birds."
+    }
   };
+  const furnitureActivities = {"reading-chair": "home-reading", "amber-lamp": "home-reading", "cat-bed": "home-birds"};
   const box = (left, top, right, bottom) => [[left, top], [right, top], [right, bottom], [left, bottom]];
 
   const wood = {ink: "#4c2c24", deep: "#71422a", shade: "#955831", mid: "#b97843", light: "#d49051", gold: "#edb46b"};
@@ -158,6 +169,68 @@
     });
   }
 
+  // Neighboring floor-plan spots are at most 180 units apart, including diagonals.
+  function areNeighbors(a, b) {
+    return a.id !== b.id && Math.hypot(a.x - b.x, a.y - b.y) <= 180;
+  }
+
+  function purchaseHint(itemId, decor) {
+    if (itemId === "cat-bed") return "Try her basket at the Window so she can watch the orchard birds.";
+    if (itemId !== "reading-chair" && itemId !== "amber-lamp") return "";
+
+    const buyingChair = itemId === "reading-chair";
+    const companionId = buyingChair ? "amber-lamp" : "reading-chair";
+    const companionSlot = slots.find(slot => decor[slot.id] === companionId);
+    if (!companionSlot) {
+      return "Try the reading chair at Center and the amber lamp at Bookshelf to read a chapter with Bear.";
+    }
+
+    const preferred = slotById.get(buyingChair ? "middle" : "hearth");
+    const openSlot = [preferred, ...slots].find(slot => !decor[slot.id] && areNeighbors(slot, companionSlot));
+    const piece = buyingChair ? "chair" : "lamp";
+    const companion = buyingChair ? "lamp" : "chair";
+    if (openSlot) return `Try the ${piece} at ${openSlot.label}, beside the ${companion} at ${companionSlot.label}, to read with Bear.`;
+    return `Make room for the ${piece} beside the ${companion} at ${companionSlot.label} to read with Bear.`;
+  }
+
+  function activitySpots(state) {
+    const decor = state.decor || {};
+    const chair = slots.find(slot => decor[slot.id] === "reading-chair");
+    const lamp = slots.find(slot => decor[slot.id] === "amber-lamp");
+    const ready = {};
+    if (chair && lamp && areNeighbors(chair, lamp)) {
+      const {x, y} = chair;
+      ready["home-reading"] = {x, y: y + 17, area: [x - 29, y - 60, x + 29, y + 4]};
+    }
+    if (decor.window === "cat-bed") {
+      const {x, y} = slotById.get("window");
+      ready["home-birds"] = {x, y: y + 16, area: [x - 34, 91, x + 34, y + 4]};
+    }
+    return ready;
+  }
+
+  function drawWindowBird(ctx) {
+    // A robin perched on the outside sill above Bear's basket.
+    ctx.fillStyle = "#574239";
+    ctx.fillRect(350, 97, 7, 5); ctx.fillRect(353, 100, 10, 5);
+    ctx.fillRect(362, 99, 4, 3); ctx.fillRect(354, 104, 1, 3); ctx.fillRect(359, 104, 1, 3);
+    ctx.fillStyle = "#c56b42";
+    ctx.fillRect(351, 100, 5, 4); ctx.fillRect(348, 99, 2, 1);
+    ctx.fillStyle = "#ad9470"; ctx.fillRect(357, 101, 5, 2);
+    ctx.fillStyle = "#fff0c8"; ctx.fillRect(351, 98, 1, 1);
+  }
+
+  function drawFurnishing(ctx, piece, ready) {
+    const {itemId, x, y} = piece;
+    drawPiece(ctx, itemId, x, y);
+    if (itemId === "reading-chair" && ready["home-reading"]) {
+      ctx.fillStyle = "#79463d"; ctx.fillRect(x - 10, y - 28, 20, 8);
+      ctx.fillStyle = "#fff0c6"; ctx.fillRect(x - 9, y - 29, 8, 6);
+      ctx.fillStyle = "#e2cf9b"; ctx.fillRect(x, y - 29, 8, 6);
+      ctx.fillStyle = "#b38d71"; ctx.fillRect(x - 7, y - 27, 4, 1); ctx.fillRect(x + 2, y - 27, 4, 1);
+    }
+  }
+
   function drawFloor(ctx, pieces) {
     for (const {itemId, x, y} of pieces) {
       if (itemId === "braided-rug") drawPiece(ctx, itemId, x, y);
@@ -183,20 +256,22 @@
       bed: {x: 834, y: 218, area: [783, 67, 909, 207]},
       decorate: {x: 463, y: 191, area: [407, 69, 523, 178]}
     },
+    activitySpots,
     boundary: [[90,160], [898,160], [938,211], [973,369], [579,369], [572,403], [428,403], [421,369], [28,369], [49,284], [71,245]],
     obstacles: [box(81, 155, 277, 173), box(412, 156, 518, 176), box(542, 154, 641, 171), box(784, 155, 912, 205)],
-    draw(ctx, state, {floorOnly = false} = {}) {
+    draw(ctx, state, {floorOnly = false, spots = activitySpots(state)} = {}) {
       const pieces = placedPieces(state);
       drawFloor(ctx, pieces);
+      if (spots["home-birds"]) drawWindowBird(ctx);
       if (!floorOnly) {
-        for (const {itemId, x, y} of pieces.sort((a, b) => a.y - b.y)) {
-          if (art[itemId].footprint) drawPiece(ctx, itemId, x, y);
+        for (const piece of pieces.sort((a, b) => a.y - b.y)) {
+          if (art[piece.itemId].footprint) drawFurnishing(ctx, piece, spots);
         }
       }
     },
-    entities(state) {
+    entities(state, spots = activitySpots(state)) {
       return placedPieces(state).filter(({itemId}) => art[itemId].footprint)
-        .map(({itemId, x, y}) => ({y, draw: ctx => drawPiece(ctx, itemId, x, y)}));
+        .map(piece => ({y: piece.y, draw: ctx => drawFurnishing(ctx, piece, spots)}));
     },
     isBlocked(x, y, state) {
       return slots.some(slot => {
@@ -242,6 +317,16 @@
       const occupant = selected && state.decor?.[selected.id];
       const replacing = occupant && occupant !== itemId;
       const canSave = itemId && selected && current?.id !== target;
+      const preview = {...state.decor};
+      if (canSave) {
+        if (current) delete preview[current.id];
+        preview[target] = itemId;
+      }
+      const activity = furnitureActivities[itemId];
+      const available = activity && activitySpots({decor: preview})[activity];
+      let tip = "";
+      if (activity && !available) tip = places[activity].hint;
+      if (available && canSave) tip = places[activity].preview;
       const hint = !itemId ? "Bring home a furnishing from the meadow market."
         : replacing ? `${labels[occupant]} will go back into storage.`
         : selected ? `${labels[itemId]} · ${selected.label}`
@@ -256,20 +341,20 @@
         const name = id ? `${slot.label}, ${labels[id]}` : `${slot.label}, empty`;
         return `<button type="button" class="cottage-slot" style="--slot-x:${slot.x / 10}%;--slot-y:${slot.y / 4.09}%" data-slot="${slot.id}" data-occupied="${Boolean(id)}" aria-pressed="${slot.id === target}" aria-label="${escapeHtml(name)}"><span>${slot.label}</span></button>`;
       }).join("") : "";
-      const actions = itemId
-        ? `<button type="button" class="small-action" data-decor-command="put"${canSave ? "" : " disabled"}>${replacing ? "Replace" : current ? "Move here" : "Place here"}</button>${current ? '<button type="button" class="cottage-secondary" data-decor-command="store">Put away</button>' : ""}`
-        : '<button type="button" class="small-action" data-decor-command="shop">Browse furnishings</button>';
+      let actions = '<button type="button" class="small-action" data-decor-command="shop">Browse furnishings</button>';
+      if (itemId) {
+        actions = available && !canSave
+          ? `<button type="button" class="small-action" data-visit="${activity}">${places[activity].action}</button>`
+          : `<button type="button" class="small-action" data-decor-command="put"${canSave ? "" : " disabled"}>${replacing ? "Replace" : current ? "Move here" : "Place here"}</button>`;
+        if (current) actions += '<button type="button" class="cottage-secondary" data-decor-command="store">Put away</button>';
+        actions += '<button type="button" class="cottage-secondary cottage-done" data-decor-command="close">Done</button>';
+      }
       tray.innerHTML = choices;
       markers.innerHTML = marks;
-      status.textContent = message || hint;
-      buttons.innerHTML = actions + (itemId ? '<button type="button" class="cottage-secondary cottage-done" data-decor-command="close">Done</button>' : "");
+      status.textContent = [message || hint, tip].filter(Boolean).join(" · ");
+      buttons.innerHTML = actions;
       for (const button of editor.querySelectorAll("[data-piece]")) {
         drawPiece(button.querySelector("canvas").getContext("2d"), button.dataset.piece, 22, 29, 0.9);
-      }
-      const preview = {...state.decor};
-      if (canSave) {
-        if (current) delete preview[current.id];
-        preview[target] = itemId;
       }
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       scene.draw(ctx, {decor: preview});
@@ -279,7 +364,7 @@
     editor.addEventListener("click", event => {
       const button = event.target.closest("button");
       if (!button || button.disabled) return;
-      const {piece, slot, decorCommand} = button.dataset;
+      const {piece, slot, decorCommand, visit} = button.dataset;
       message = "";
       if (piece) {
         itemId = piece;
@@ -288,6 +373,9 @@
       } else if (slot) {
         target = slot;
         render(`[data-slot="${slot}"]`);
+      } else if (visit && activitySpots(life.getState())[visit]) {
+        close(false);
+        world.walkTo(visit);
       } else if (decorCommand === "shop") shop();
       else if (decorCommand === "close") close();
       else if (decorCommand === "store" || decorCommand === "put") {
@@ -309,5 +397,5 @@
     drawPiece(canvas.getContext("2d"), itemId, canvas.width / 2, canvas.height - 2, 0.85);
   }
 
-  window.CozyCottage = Object.freeze({scene, places, items, purchaseOutcomes, slots, canPlace, drawIcon, open});
+  window.CozyCottage = Object.freeze({scene, places, items, purchaseOutcomes, purchaseHint, slots, canPlace, activitySpots, drawPiece, drawIcon, open});
 })();

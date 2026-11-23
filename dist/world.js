@@ -40,6 +40,7 @@
   let state, player, bear, listeners, canvas, ctx;
   let verticalCamera = null;
   let scene = meadow, route = [], destination = null, visit = null, paused = false;
+  let spots = meadow.spots;
   let moving = false, face = 1, lastTime = null, lastNear, lastSaved = 0, elapsed = 0;
   let trail = [], bearRoute = [], nextBearRoute = 0, bearSpeed = 0;
   let bearMoving = false, bearFace = 1, bearHorizontal = 0, bearMotion = 0, bearStride = 1;
@@ -160,7 +161,11 @@
     return traveled;
   }
 
-  function spot(id) { return id==="bear" ? bear : scene.spots[id]; }
+  function refreshSpots() {
+    spots = scene.activitySpots ? {...scene.activitySpots(state), ...scene.spots} : scene.spots;
+  }
+
+  function spot(id) { return id==="bear" ? bear : spots[id]; }
 
   function reachedExit(before, verticalStep) {
     for (const [id, { y, exit }] of Object.entries(scene.spots)) {
@@ -175,7 +180,7 @@
 
   function nearby() {
     let id = null, best = 42;
-    for (const [name, landmark] of Object.entries(scene.spots)) {
+    for (const [name, landmark] of Object.entries(spots)) {
       if (name==="bear") continue;
       const distance = dist(player, landmark);
       if (distance<best) { id = name; best = distance; }
@@ -255,7 +260,7 @@
     if (x<0 || x>=width || y<0 || y>=height) return;
     canvas.focus({preventScroll:true});
     let target = null;
-    for (const [id,s] of Object.entries(scene.spots)) {
+    for (const [id,s] of Object.entries(spots)) {
       const a = s.area;
       if (id!=="bear" && a && x>=a[0] && x<=a[2] && y>=a[1] && y<=a[3]) {
         target = id;
@@ -265,7 +270,7 @@
     const bearHit = Math.abs(x-bear.x)<(bearMoving ? 19 : 11)
       && y>=bear.y-(bearMoving ? 27 : 39) && y<=bear.y+3;
     if (bearHit && (!target || dist(point(x,y),spot(target))>24)) target = "bear";
-    if (target && !scene.spots[target]?.exit && dist(player,spot(target))<(target==="bear" ? 75 : 42)) {
+    if (target && !spots[target]?.exit && dist(player,spot(target))<(target==="bear" ? 75 : 42)) {
       stopWalking();
       listeners.visit(target);
     } else if (target) walkTo(target);
@@ -504,7 +509,7 @@
     if (scene===meadow) { meadowDecor(); meadowAmbient(); }
     if (scene.draw) {
       ctx.save();
-      scene.draw(ctx,state,{ floorOnly: Boolean(scene.entities), elapsed, reducedMotion: reduced.matches });
+      scene.draw(ctx,state,{ floorOnly: Boolean(scene.entities), spots, elapsed, reducedMotion: reduced.matches });
       ctx.restore();
     }
     if (destination && !reduced.matches) {
@@ -512,7 +517,7 @@
       ctx.ellipse(destination.x,destination.y,5+Math.sin((elapsed-arrivalTime)*7),2.5,0,0,Math.PI*2);ctx.stroke();
     }
     const happy = celebration && elapsed-celebration.start<1.5;
-    const entities = scene.entities?.(state) ?? [];
+    const entities = scene.entities?.(state, spots) ?? [];
     const actors = [
       { y: player.y, draw: () => sprite("pets/mere-atlas.webp",player,61,moving ? (face>0 ? 1 : 2) : happy ? 3 : 0,moving ? 8 : happy ? 4 : 6,elapsed*(moving ? 9 : happy ? 6 : 5)) },
       { y: bear.y, draw: () => sprite("pets/bear-atlas.webp",bear,40,bearMoving ? (bearFace>0 ? 1 : 2) : happy ? 3 : 0,bearMoving || happy ? 4 : 6,bearMoving ? bearStride : elapsed*(happy ? 6 : 4)) }
@@ -547,12 +552,13 @@
     if (!bearByPlayer && !fed() && home && clear(home.x,home.y) && dist(player,home)>23) return point(home.x,home.y);
     const offsets = [[40,0],[-40,0],[0,39],[0,-39],[30,21],[-30,21],[30,-21],[-30,-21],[25,0],[-25,0]];
     const choices = offsets.map(([x,y]) => point(player.x+x,player.y+y)).filter(position => clear(position.x,position.y));
-    const awayFromLandmarks = choices.find(position => Object.values(scene.spots).every(landmark => dist(position,landmark)>25));
+    const awayFromLandmarks = choices.find(position => Object.values(spots).every(landmark => dist(position,landmark)>25));
     return awayFromLandmarks || choices[0] || { ...player };
   }
 
   function enter(next,position,bearByPlayer=false) {
     scene = next;
+    refreshSpots();
     player = openSpot(position) || openSpot(next.spawn);
     bear = placeBear(bearByPlayer);
     getImage(next.background);
@@ -595,7 +601,9 @@
 
   function sync() {
     const wasFed = fed();
+    const previousSpot = visit && spot(visit);
     state = window.CozyLife.getState();
+    refreshSpots();
     let reset = wasFed!==fed();
     if (!clear(player.x,player.y)) {
       player = openSpot(player) || openSpot(scene.spawn);
@@ -607,8 +615,11 @@
       bear = openSpot(bear) || placeBear();
       reset = true;
     }
-    if (reset) { resetFollow(); updateNear(true); }
-    if (route.length && [player,...route.slice(0,-1)].some((start,index) => !segmentClear(start,route[index]))) {
+    if (reset) resetFollow();
+    updateNear(reset);
+    if (visit && !spot(visit)) stopWalking();
+    const spotMoved = visit && previousSpot && dist(previousSpot, spot(visit)) > 0;
+    if (route.length && (spotMoved || [player,...route.slice(0,-1)].some((start,index) => !segmentClear(start,route[index])))) {
       const target = visit ? approaches(visit) : destination;
       const id = visit;
       stopWalking();

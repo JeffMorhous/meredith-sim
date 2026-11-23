@@ -1,12 +1,12 @@
 # meredith simulator
 
-A cozy browser adventure made for Meredith and her cat, Bear. Give Bear breakfast and he’ll follow Mere around the meadow. Spend the morning picking apples or learning a birdsong, then bring something home for the cottage. [Play on Vercel](https://meredith-sim.vercel.app/)
+A cozy browser adventure made for Meredith and her cat, Bear. Give Bear breakfast and she’ll follow Mere around the meadow. Spend the morning picking apples or learning a birdsong, then bring something home for the cottage. [Play on Vercel](https://meredith-sim.vercel.app/)
 
 ## Your first day
 
 1. Walk up to Bear and choose **Serve breakfast** to earn 20 cozy points. Open the **Journal** for more errands.
 2. Follow the meadow’s south trail past the sign to reach Bramblebrook Orchard. Pick apples, echo the birdsong, or follow the clues to the missing bell. The south trail in the orchard leads home.
-3. Open **Shop → Furnishings**. Breakfast alone buys Bear’s bed for 12 points. Walk up the cottage steps and choose **Decorate** to give him his spot.
+3. Open **Shop → Furnishings**. Breakfast alone buys Bear’s bed for 12 points. Walk up the cottage steps and choose **Decorate** to put her basket at the **Window**, where she can watch the birds.
 4. Walk down across the doormat to leave, or visit Mere’s bed to start a new day. Rest makes the daily errands available again and carries purchases and adventure progress forward.
 
 | Action | Controls |

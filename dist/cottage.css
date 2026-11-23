@@ -125,6 +125,7 @@
 }
 .cottage-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -145,6 +146,24 @@
 }
 .cottage-done {
   margin-left: auto;
+}
+.moment-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 12px;
+  border: 2px solid #795739;
+  border-radius: 4px;
+  background: #e6c794;
+  image-rendering: pixelated;
+}
+.moment-line {
+  margin: 12px 0;
+  color: #434d3e;
+  font: 1rem/1.45 var(--sans);
+}
+.moment-action {
+  min-height: 40px;
 }
 @media (max-width: 550px) {
   .cottage-tray {

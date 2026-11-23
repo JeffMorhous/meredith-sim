@@ -20,7 +20,7 @@
   const destinations={
     meadow:{name:"Mere’s Meadow",background:"meadow.webp",detail:"Garden, pond & market",line:"The meadow path is warm in the sun."},
     orchard:{...orchard.scene,detail:"Apple picking & birdsong",line:"The trees are heavy with apples. A little chorus carries over from the roost."},
-    interior:{...home.scene,detail:"Decorating & rest",line:"Welcome home. There’s a place for Bear, and a little room to make your own."}
+    interior:{...home.scene,detail:"Decorating, quiet moments & rest",line:"Welcome home. There’s a place for Bear, and a little room to make your own."}
   };
   const assetUrl=path=>"assets/"+path;
   const mark=()=>'<span class="mark">'+icon("check")+'</span>';
@@ -169,8 +169,47 @@
     const st=s();
     shell("bed","A good night’s rest",'<p class="note">The quilt is turned down. Bear has already picked a warm spot.</p><p class="hint-line">'+(st.completed.length?'You’ve finished '+st.completed.length+' of '+life.chores.length+' errands today. ':'')+'Rest to begin day '+(st.day+1)+'. Your cozy points and furnishings carry over.</p><button class="small-action" data-action="rest">Rest until morning</button>');
   }
+  const cottageMoments = {
+    "home-reading": {
+      title: "A chapter with Bear",
+      beats: [
+        {line: "Mere opens her book in the lamplight. Bear climbs into her lap and sets one paw on the page.", action: "Read aloud"},
+        {line: "“The mouse kept a lighthouse in a walnut shell.” At the word mouse, Bear leans in so close that her whiskers brush the paper.", action: "Turn the page"},
+        {line: "By the time the little lighthouse shines, Bear is asleep. Mere keeps a thumb in the book and lets Bear finish her dream."}
+      ]
+    },
+    "home-birds": {
+      title: "Birds at the window",
+      beats: [
+        {line: "Bear settles into her basket. On the other side of the glass, a robin lands on the sill with a blade of grass in its beak.", action: "Listen with Bear"},
+        {line: "The robin tips its head. “Ek-ek-ek,” says Bear. One small chirp comes back through the glass.", action: "See where it goes", cue: "robin"},
+        {line: "The robin carries its grass toward the apple trees. Bear watches it go, one paw still resting on the sill."}
+      ]
+    }
+  };
+  function showMomentBeat(id, step){
+    const beat = cottageMoments[id].beats[step];
+    const button = panel.querySelector(".moment-action");
+    panel.querySelector(".moment-line").textContent = beat.line;
+    button.textContent = beat.action || "Back to the cottage";
+    if (beat.action) button.dataset.momentNext = String(step + 1);
+    else {
+      delete button.dataset.momentNext;
+      button.dataset.action = "close";
+    }
+    window.CottageMoments.draw(panel.querySelector("[data-moment-art]"), id, step);
+    if (beat.cue) audio.cue(beat.cue);
+  }
+  function cottageMoment(id){
+    if (world.sceneId !== "interior" || !home.activitySpots(s())[id]) return;
+    shell(id, cottageMoments[id].title,
+      '<canvas class="moment-art" data-moment-art width="320" height="128" aria-hidden="true"></canvas>' +
+      '<p class="moment-line" aria-live="polite" aria-atomic="true"></p>' +
+      '<button type="button" class="small-action moment-action"></button>');
+    showMomentBeat(id, 0);
+  }
   function help(){
-    shell("help","How to play",'<dl class="help-list"><dt>Walk</dt><dd>Use WASD, the arrow keys, the directional pad, or tap the ground.</dd><dt>Interact</dt><dd>Tap a landmark, or press E, Space, or the gold A button nearby.</dd><dt>Explore</dt><dd>Walk up the cottage steps to go inside, or down across the doormat to leave. Follow the south trail past the sign to walk between the meadow and orchard.</dd><dt>Journal</dt><dd>Press J for today’s errands. Choose one to walk there.</dd><dt>Decorate</dt><dd>Buy something from the Furnishings shelf. Inside the cottage, choose Decorate to place, move, or store it.</dd><dt>Rest</dt><dd>Visit the bed to begin another day. Progress saves in this browser.</dd><dt>Music</dt><dd>Turn on the music button for Mere’s lo-fi soundtrack.</dd></dl><button class="small-action" data-action="close">Back to the game</button>');
+    shell("help","How to play",'<dl class="help-list"><dt>Walk</dt><dd>Use WASD, the arrow keys, the directional pad, or tap the ground.</dd><dt>Interact</dt><dd>Tap a landmark, or press E, Space, or the gold A button nearby.</dd><dt>Explore</dt><dd>Walk up the cottage steps to go inside, or down across the doormat to leave. Follow the south trail past the sign to walk between the meadow and orchard.</dd><dt>Journal</dt><dd>Press J for today’s errands. Choose one to walk there.</dd><dt>Decorate</dt><dd>Buy something from the Furnishings shelf. Inside the cottage, choose Decorate to place, move, or store it. Put Bear’s bed at the window to watch birds together, or set the reading chair near the amber lamp to share a chapter.</dd><dt>Rest</dt><dd>Visit the bed to begin another day. Progress saves in this browser.</dd><dt>Music</dt><dd>Turn on the music button for Mere’s lo-fi soundtrack.</dd></dl><button class="small-action" data-action="close">Back to the game</button>');
   }
   function visit(id){
     audio.cue("interaction");
@@ -182,6 +221,7 @@
     else if(id==="home-exit")navigate("meadow",{x:239,y:243});
     else if(id==="bed")bedtime();
     else if(id==="decorate")decorate();
+    else if(Object.hasOwn(cottageMoments,id))cottageMoment(id);
     else taskMenu(id);
   }
   function pulse(text){
@@ -232,6 +272,7 @@
   panel.addEventListener("click",ev=>{
     const btn=ev.target.closest("button");if(!btn||btn.disabled)return;
     if(btn.dataset.action){actions[btn.dataset.action]?.();return}
+    if(btn.hasAttribute("data-moment-next")){showMomentBeat(page,Number(btn.dataset.momentNext));return}
     if(btn.dataset.travel){navigate(btn.dataset.travel);return}
     if(btn.dataset.shelf){shop("",btn.dataset.shelf);return}
     if(btn.hasAttribute("data-clue")){
@@ -255,7 +296,10 @@
       const item=life.items.find(entry=>entry.id===id);
       if(item.category==="furniture"||id==="flower-box"){
         newestPiece=id;
-        shell("unpacked",item.label,'<p class="note">'+esc(res.message)+'</p><div class="purchase-actions"><button class="small-action" data-action="decorate-home">Decorate at home</button><button class="small-action" data-action="shop">Keep shopping</button></div>');
+        const hint = home.purchaseHint(id, s().decor);
+        shell("unpacked",item.label,'<p class="note">'+esc(res.message)+'</p>' +
+          (hint ? '<p class="note">'+esc(hint)+'</p>' : '') +
+          '<div class="purchase-actions"><button class="small-action" data-action="decorate-home">Decorate at home</button><button class="small-action" data-action="shop">Keep shopping</button></div>');
       }else{
         close();refresh();world.celebrate("buy");say("Mere",res.message,5900);
       }
