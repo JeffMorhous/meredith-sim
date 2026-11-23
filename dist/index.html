@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#385e50">
+  <meta name="description" content="A pocket-sized meadow adventure for Meredith and her cat, Bear.">
+  <title>meredith simulator · Mere &amp; Bear</title>
+  <link rel="preload" href="assets/pixelify-sans.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="icon" href="assets/flower.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="icons.js"></script>
+  <script defer src="life.js"></script>
+  <script defer src="music.js"></script>
+  <script defer src="world.js"></script>
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <header class="topbar"><div class="masthead">
+    <h1 class="brand"><img src="assets/flower.svg" width="38" height="42" alt="">meredith simulator</h1>
+    <nav aria-label="Game views">
+      <button class="nav-button current" data-view="play" aria-label="Play"><i data-icon="gamepad"></i><span>Play</span></button>
+      <button class="nav-button" data-view="journal" aria-label="Journal"><i data-icon="book"></i><span>Journal</span></button>
+      <button class="nav-button" data-view="shop" aria-label="Shop"><i data-icon="bag"></i><span>Shop</span></button>
+    </nav>
+    <button id="sound" class="sound-button" aria-pressed="false" aria-label="Turn on lo-fi music"><i data-icon="music"></i><span>Sound off</span></button>
+  </div></header>
+  <main>
+    <div class="device">
+      <div class="machine-top">
+        <span class="power"><i></i> POWER</span>
+        <span class="machine-title"><b></b> MERE &amp; BEAR <b></b></span>
+        <span class="vent" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      </div>
+      <div class="bezel" id="bezel">
+        <div class="screen">
+          <div class="world" id="world">
+            <canvas id="map" width="1000" height="409" tabindex="0" aria-label="Mere’s Meadow. Walk with arrow keys or WASD. Use E to interact, or tap a place to walk there."></canvas>
+            <div class="hud hud-location"><i data-icon="pin"></i><span id="place-name">Mere’s Meadow</span></div>
+            <div class="hud hud-points" aria-label="Cozy points"><i data-icon="star"></i><span id="score">0</span><small>cozy pts</small></div>
+            <div class="weather"><i data-icon="sun"></i><span id="day">Day 1</span><b>·</b><span>Spring</span></div>
+            <div id="gain" aria-hidden="true"></div>
+          </div>
+          <div class="dialogue" id="dialogue" aria-live="polite" aria-atomic="true">
+            <div class="portrait"><img id="portrait" src="assets/pets/bear-portrait.webp" alt=""></div>
+            <div class="dialogue-copy"><div class="speaker-name"><span id="speaker">Bear</span><i data-icon="heart"></i></div><p id="line">Mrrp! Bear gives your hand a little nudge. It must be breakfast time.</p></div>
+            <button class="talk" id="talk" aria-label="Interact with Bear"><kbd>E</kbd><span>Interact</span></button>
+          </div>
+        </div>
+        <div class="overlay" id="overlay" hidden><section id="panel" class="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabindex="-1"></section></div>
+      </div>
+      <div class="hardware">
+        <div class="dpad-wrap">
+          <div class="dpad" aria-label="Directional pad">
+            <div class="pad-base"></div><div class="pad-face"></div>
+            <button data-dir="up" aria-label="Walk up"><i></i></button>
+            <button data-dir="left" aria-label="Walk left"><i></i></button>
+            <button data-dir="right" aria-label="Walk right"><i></i></button>
+            <button data-dir="down" aria-label="Walk down"><i></i></button>
+            <span class="pad-center" aria-hidden="true"></span>
+          </div>
+        </div>
+        <div class="middle-controls">
+          <div class="select-control"><button id="quick-journal" aria-label="Open journal"></button><span>Journal</span></div>
+          <div class="select-control"><button id="quick-shop" aria-label="Open shop"></button><span>Shop</span></div>
+        </div>
+        <div class="action-controls">
+          <div class="action-control b-button"><button id="b-key" aria-label="B — Back or open journal">B</button><span>Back</span></div>
+          <div class="action-control a-button"><button id="a-key" aria-label="A — Interact">A</button><span>Interact</span></div>
+        </div>
+      </div>
+      <b class="screw screw-bl" aria-hidden="true"></b><b class="screw screw-br" aria-hidden="true"></b>
+    </div>
+    <div class="under-device">
+      <div class="keyboard-guide"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><em>or</em><i data-icon="arrows"></i> Move</span><span><kbd>E</kbd> Interact</span><span><kbd>J</kbd> Journal</span></div>
+      <button id="help"><i data-icon="help"></i> How to play</button>
+    </div>
+  </main>
+  <footer><div class="footer-rule"></div><span><i data-icon="heart"></i> Made for Meredith</span><div class="footer-rule"></div></footer>
+</body>
+</html>
