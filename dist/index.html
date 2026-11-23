@@ -8,18 +8,23 @@
   <title>meredith simulator · Mere &amp; Bear</title>
   <link rel="preload" href="assets/pixelify-sans.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="icon" href="assets/flower.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
-  <script defer src="icons.js"></script>
-  <script defer src="life.js"></script>
-  <script defer src="music.js"></script>
-  <script defer src="world.js"></script>
-  <script defer src="game.js"></script>
+  <link rel="stylesheet" href="style.css?v=5e8212a587">
+  <link rel="stylesheet" href="orchard.css?v=7c2f6de8c6">
+  <link rel="stylesheet" href="cottage.css?v=431184c4ef">
+  <script defer src="icons.js?v=eeb7bab3a4"></script>
+  <script defer src="orchard.js?v=d4d6b8bd56"></script>
+  <script defer src="cottage.js?v=281923102c"></script>
+  <script defer src="life.js?v=74fa65c8ec"></script>
+  <script defer src="music.js?v=f07bc16fc5"></script>
+  <script defer src="world.js?v=a2c895e5a2"></script>
+  <script defer src="game.js?v=176786f7ea"></script>
 </head>
 <body>
   <header class="topbar"><div class="masthead">
     <h1 class="brand"><img src="assets/flower.svg" width="38" height="42" alt="">meredith simulator</h1>
     <nav aria-label="Game views">
       <button class="nav-button current" data-view="play" aria-label="Play"><i data-icon="gamepad"></i><span>Play</span></button>
+      <button class="nav-button" data-view="places" aria-label="Places"><i data-icon="map"></i><span>Places</span></button>
       <button class="nav-button" data-view="journal" aria-label="Journal"><i data-icon="book"></i><span>Journal</span></button>
       <button class="nav-button" data-view="shop" aria-label="Shop"><i data-icon="bag"></i><span>Shop</span></button>
     </nav>
@@ -38,7 +43,8 @@
             <canvas id="map" width="1000" height="409" tabindex="0" aria-label="Mere’s Meadow. Walk with arrow keys or WASD. Use E to interact, or tap a place to walk there."></canvas>
             <div class="hud hud-location"><i data-icon="pin"></i><span id="place-name">Mere’s Meadow</span></div>
             <div class="hud hud-points" aria-label="Cozy points"><i data-icon="star"></i><span id="score">0</span><small>cozy pts</small></div>
-            <div class="weather"><i data-icon="sun"></i><span id="day">Day 1</span><b>·</b><span>Spring</span></div>
+            <div class="weather"><i data-icon="sun"></i><span id="day">Day 1</span><b>·</b><span id="season">Spring</span></div>
+            <button id="room-tools" class="room-tools" hidden><i data-icon="chair"></i> Decorate</button>
             <div id="gain" aria-hidden="true"></div>
           </div>
           <div class="dialogue" id="dialogue" aria-live="polite" aria-atomic="true">
@@ -73,9 +79,9 @@
     </div>
     <div class="under-device">
       <div class="keyboard-guide"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><em>or</em><i data-icon="arrows"></i> Move</span><span><kbd>E</kbd> Interact</span><span><kbd>J</kbd> Journal</span></div>
+      <span class="dedication"><i data-icon="heart"></i> Made for Meredith</span>
       <button id="help"><i data-icon="help"></i> How to play</button>
     </div>
   </main>
-  <footer><div class="footer-rule"></div><span><i data-icon="heart"></i> Made for Meredith</span><div class="footer-rule"></div></footer>
 </body>
 </html>

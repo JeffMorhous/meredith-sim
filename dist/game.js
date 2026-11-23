@@ -2,17 +2,27 @@
   "use strict";
   const el=id=>document.getElementById(id);
   const life=window.CozyLife, world=window.CozyWorld, audio=window.CozyAudio;
+  const orchard=window.CozyOrchard, home=window.CozyCottage;
   const {icon}=window.PocketIcons;
   const panel=el("panel"),overlay=el("overlay"),map=el("map");
   const directions={arrowup:"up",w:"up",arrowdown:"down",s:"down",arrowleft:"left",a:"left",arrowright:"right",d:"right"};
   const places={
+    ...orchard.places,
+    ...home.places,
     bear:{name:"Bear",line:"Mrrp! Bear gives your hand a little nudge. It must be breakfast time."},
-    cottage:{name:"Mere’s cottage",line:"The door is open. Come home whenever you’re ready for a new day."},
+    cottage:{name:"Mere’s cottage",line:"The door is open. Step inside to decorate or settle in for the night."},
+    "orchard-gate":{name:"Orchard trail",line:"Beyond the sign, the trail winds through apple trees. Follow it into the orchard."},
     mailbox:{name:"The mailbox",line:"The little red flag is up. There might be something inside."},
     garden:{name:"Flower garden",line:"The tulips lean into the sun. Their soil could use a little water."},
     shop:{name:"Meadow market",line:"A ribbon flutters on the market stall. Bear has excellent taste."},
     pond:{name:"Lily pond",line:"Something makes a tiny splash between the lily pads."}
   };
+  const destinations={
+    meadow:{name:"Mere’s Meadow",background:"meadow.webp",detail:"Garden, pond & market",line:"The meadow path is warm in the sun."},
+    orchard:{...orchard.scene,detail:"Apple picking & birdsong",line:"The trees are heavy with apples. A little chorus carries over from the roost."},
+    interior:{...home.scene,detail:"Decorating & rest",line:"Welcome home. There’s a place for Bear, and a little room to make your own."}
+  };
+  const assetUrl=path=>"assets/"+path;
   const mark=()=>'<span class="mark">'+icon("check")+'</span>';
   const price=value=>'<span class="price">'+icon("star")+value+'</span>';
   const esc=text=>String(text).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -25,7 +35,7 @@
   }
   function context(id){
     const hint=el("talk");
-    hint.setAttribute("aria-label",id?"Interact with "+places[id].name:"Find a place in your journal");
+    hint.setAttribute("aria-label",id?"Interact with "+places[id].name:"Choose a place to explore");
     hint.querySelector("span").textContent=id?"Interact":"Explore";
     if(Date.now()<pendingMessageUntil)return;
     if(id==="bear"){
@@ -40,27 +50,79 @@
       const visited=visitedLines[id];
       say(places[id].name,visited&&s().completed.includes(visited[0])?visited[1]:places[id].line);
     }
-    else say("Mere","A little time to wander. Tap a spot in the meadow, or see what’s in the journal.");
+    else say("Mere",destinations[world.sceneId]?.line||destinations.meadow.line);
+  }
+  function sceneChanged(id){
+    const destination=destinations[id];
+    el("place-name").textContent=destination.name;
+    el("season").textContent=id==="interior"?"Home":"Spring";
+    el("room-tools").hidden=id!=="interior";
+    map.setAttribute("aria-label",destination.name+". Walk with arrows or WASD. Tap a landmark or press E nearby to interact.");
+  }
+  function navigate(id,spawn){
+    close(false);
+    world.travel(id,spawn);
+    refresh();
+    say("Mere",destinations[id].line,1800);
+    map.focus({preventScroll:true});
+  }
+  function travelMenu(){
+    const rows=Object.entries(destinations).map(([id,destination])=>{
+      const current=id===world.sceneId;
+      return '<button class="destination" data-travel="'+id+'" '+(current?'disabled':'')+'><img alt="" src="'+assetUrl(destination.background)+'"><span><strong>'+esc(destination.name)+'</strong><small>'+esc(destination.detail)+'</small></span>'+(current?'<b>Here</b>':'')+'</button>';
+    }).join("");
+    shell("places","Places",'<p class="note">Choose where Mere and Bear will go.</p><div class="destinations">'+rows+'</div>');
+  }
+  function goToSpot(id){
+    close(false);
+    const destination=Object.hasOwn(orchard.scene.spots,id)?"orchard":Object.hasOwn(home.scene.spots,id)?"interior":"meadow";
+    if(id!=="bear"&&world.sceneId!==destination) navigate(destination);
+    world.walkTo(id);
+  }
+  let newestPiece=null;
+  function decorate(initialItemId){
+    if(world.sceneId!=="interior")return;
+    home.open({panel,shell,life,world,close,initialItemId,shop:()=>shop("","furniture"),onChange:refresh});
+  }
+  function decorateAtHome(){
+    if(world.sceneId!=="interior")navigate("interior");
+    decorate(newestPiece);
   }
   function refresh(){
     const state=s();el("score").textContent=state.points;el("day").textContent="Day "+state.day;world.sync();
     document.querySelectorAll("[data-view]").forEach(b=>{
-      const active=(b.dataset.view==="play"?!["journal","letter","shop"].includes(page):b.dataset.view===(page==="letter"?"journal":page));
+      const view=["letter","adventure"].includes(page)?"journal":page==="unpacked"?"shop":page;
+      const active=b.dataset.view==="play"?!["journal","shop","places"].includes(view):b.dataset.view===view;
       b.classList.toggle("current",active);
       if(active)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");
     });
   }
   function shell(id,title,body){
+    if(page?.startsWith("orchard-game-")&&page!==id)orchard.stop();
+    if(page==="chase"&&id!=="chase"){clearTimeout(chaseTimer);chaseLock=false}
     if(overlay.hidden)returnFocus=document.activeElement;
     page=id;world.pause(true);overlay.hidden=false;
     panel.innerHTML='<div class="panel-heading"><h2 id="panel-title">'+title+'</h2><button class="x" data-action="close" aria-label="Close">'+icon("close")+'</button></div>'+body;
+    panel.dataset.page=id;
     panel.scrollTop=0;panel.focus({preventScroll:true});refresh();
   }
   function close(focus=true){
+    if(page?.startsWith("orchard-game-"))orchard.stop();
     clearTimeout(chaseTimer);chaseLock=false;
     if(overlay.hidden)return;
     page=null;overlay.hidden=true;panel.replaceChildren();world.pause(false);refresh();
     if(focus)(returnFocus&&returnFocus!==document.body&&returnFocus.isConnected?returnFocus:map).focus({preventScroll:true});
+  }
+  function journalTabs(active){
+    return '<div class="shelves" role="group" aria-label="Journal sections">'+[["journal","Daily errands"],["adventure","Adventure"]].map(([id,title])=>'<button data-action="'+id+'" aria-pressed="'+(id===active)+'">'+title+'</button>').join("")+'</div>';
+  }
+  function adventureJournal(){
+    const st=s(),story=orchard.adventure,stage=story.stages[st.bellStage];
+    const log=story.stages.slice(0,st.bellStage).map(entry=>'<li>'+esc(entry.outcome)+'</li>').join("");
+    const current=stage
+      ? '<p class="note">'+esc(st.bellStage?story.stages[st.bellStage-1].outcome:stage.description)+'</p><button class="small-action" data-go="'+stage.spot+'">Walk to '+esc(places[stage.spot].name.replace(/^The /,"the "))+'</button>'
+      : '<p class="note">The little bell is back at the roost. You can see it whenever you visit.</p>';
+    shell("adventure","Mere’s journal",journalTabs("adventure")+'<div class="story-summary"><img alt="" src="'+assetUrl(orchard.scene.background)+'"><div><h3>'+esc(story.title)+'</h3><small>'+st.bellStage+' / '+story.stages.length+' clues · '+story.reward+' cozy pts</small></div></div>'+current+(log?'<ol class="clue-log">'+log+'</ol>':''));
   }
   function journal(){
     const st=s();
@@ -70,15 +132,23 @@
       return '<button class="menu-row" data-go="'+c.location+'" '+(done?'disabled':'')+'><span class="mark">'+(done?icon("check"):"")+'</span><span class="desc"><strong>'+c.label+'</strong></span>'+(done?'<small>Done</small>':price(reward(c)))+'<span class="sr-only">'+esc(name)+'</span></button>';
     }).join("");
     const m=st.milestone;
-    shell("journal","Mere’s journal",'<p class="note">Day '+st.day+' · '+st.completed.length+' of '+life.chores.length+' cozy things done. Choose one to walk there.</p><div class="row-list">'+rows+'</div><div class="goal"><div class="section-line"><strong class="goal-title">'+(m.reached?"A letter for Meredith":"Sealed letter")+'</strong>'+(m.reached?'<button class="small-action" data-action="letter">Open</button>':'<small>'+st.totalPoints+' / '+m.target+' pts</small>')+'</div>'+(m.reached?'':'<p class="hint-line">A keepsake opens at '+m.target+' lifetime cozy points.</p><progress max="'+m.target+'" value="'+st.totalPoints+'"></progress>')+'</div>');
+    shell("journal","Mere’s journal",journalTabs("journal")+'<p class="note">Day '+st.day+' · '+st.completed.length+' of '+life.chores.length+' cozy things done. Choose one to walk there.</p><div class="row-list">'+rows+'</div><div class="goal"><div class="section-line"><strong class="goal-title">'+(m.reached?"A letter for Meredith":"Sealed letter")+'</strong>'+(m.reached?'<button class="small-action" data-action="letter">Open</button>':'<small>'+st.totalPoints+' / '+m.target+' pts</small>')+'</div>'+(m.reached?'':'<p class="hint-line">A keepsake opens at '+m.target+' lifetime cozy points.</p><progress max="'+m.target+'" value="'+st.totalPoints+'"></progress>')+'</div>');
   }
-  function shop(feedback=""){
+  let marketShelf="garden";
+  function shop(feedback="",shelf=marketShelf){
+    marketShelf=shelf;
     const st=s();
-    const rows=life.items.map(it=>{
+    const isFurniture=it=>it.category==="furniture"||it.id==="flower-box";
+    const stock=life.items.filter(it=>shelf==="furniture"?isFurniture(it):it.category!=="furniture");
+    if(shelf==="furniture")stock.sort((a,b)=>a.cost-b.cost);
+    const rows=stock.map(it=>{
       const owned=st.owned.includes(it.id);
-      return '<button class="menu-row" data-buy="'+it.id+'" '+(owned?'disabled':'')+'><span class="desc"><strong>'+it.label+'</strong><small>'+it.description+'</small></span>'+(owned?'<small>Owned</small>':price(it.cost))+'</button>';
+      const preview=shelf==="furniture"?'<canvas class="shop-sprite" width="46" height="32" data-preview="'+it.id+'" aria-hidden="true"></canvas>':'';
+      return '<button class="menu-row" data-buy="'+it.id+'" '+(owned?'disabled':'')+'>'+preview+'<span class="desc"><strong>'+it.label+'</strong><small>'+it.description+'</small></span>'+(owned?'<small>Owned</small>':price(it.cost))+'</button>';
     }).join("");
-    shell("shop","Meadow market",'<div class="section-line"><p class="note">In Mere’s purse</p>'+price(st.points)+'</div><div class="row-list">'+rows+'</div><p class="hint-line" role="status">'+esc(feedback||"Choose a treat to bring home.")+'</p>');
+    const shelves=[["garden","Garden & Bear"],["furniture","Furnishings"]].map(([id,label])=>'<button data-shelf="'+id+'" aria-pressed="'+(id===shelf)+'">'+label+'</button>').join("");
+    shell("shop","Meadow market",'<div class="section-line"><p class="note">In Mere’s purse</p>'+price(st.points)+'</div><div class="shelves" role="group" aria-label="Market shelves">'+shelves+'</div><div class="row-list">'+rows+'</div><p class="hint-line" role="status">'+esc(feedback||(shelf==="furniture"?"Choose a furnishing, then place it inside the cottage.":"Choose a treat to bring home."))+'</p>');
+    for(const canvas of panel.querySelectorAll("[data-preview]"))home.drawIcon(canvas,canvas.dataset.preview);
   }
   function letter(){shell("letter","A letter for Meredith",'<p class="letter">'+esc(s().milestone.letter)+'</p><button class="small-action" data-action="journal">Back to journal</button>')}
   function reward(chore){return chore.reward+(chore.id==="play"&&s().owned.includes("toy")?8:0)}
@@ -90,21 +160,28 @@
     }).join("");
     let description=places[id].line;
     if(id==="bear")description=st.completed.includes("breakfast")?"Bear blinks slowly. There’s always room for a little company.":"Two bright blue eyes look up at Mere.";
-    if(chores.every(c=>st.completed.includes(c.id)))description=id==="bear"?"Bear is fed, loved, and thoroughly played with today.":"Mere has already visited today. Tomorrow will bring something new.";
-    shell(id,places[id].name,'<p class="note">'+description+'</p><div class="row-list">'+rows+'</div>');
+    if(chores.length&&chores.every(c=>st.completed.includes(c.id)))description=id==="bear"?"Bear is fed, loved, and thoroughly played with today.":"Mere has already visited today. Tomorrow will bring something new.";
+    const clue=orchard.adventure.stages[st.bellStage];
+    const story=clue?.spot===id?'<div class="clue"><strong>'+esc(orchard.adventure.title)+'</strong><p class="note">'+esc(clue.description)+'</p><button class="small-action" data-clue="'+st.bellStage+'">'+esc(clue.action)+'</button></div>':'';
+    shell(id,places[id].name,story+'<p class="note">'+description+'</p><div class="row-list">'+rows+'</div>');
   }
-  function cottage(){
+  function bedtime(){
     const st=s();
-    shell("cottage","Mere’s cottage",'<p class="note">A soft pillow, a warm patch of sun, and a little room for Bear.</p><p class="hint-line">'+(st.completed.length?'You’ve finished '+st.completed.length+' of 6 errands today. ':'')+'Rest to begin day '+(st.day+1)+'. Your cozy points and purchases carry over.</p><button class="small-action" data-action="rest">Rest until morning</button>');
+    shell("bed","A good night’s rest",'<p class="note">The quilt is turned down. Bear has already picked a warm spot.</p><p class="hint-line">'+(st.completed.length?'You’ve finished '+st.completed.length+' of '+life.chores.length+' errands today. ':'')+'Rest to begin day '+(st.day+1)+'. Your cozy points and furnishings carry over.</p><button class="small-action" data-action="rest">Rest until morning</button>');
   }
   function help(){
-    shell("help","How to play",'<p class="note">Take Mere for a walk, care for Bear, and spend cozy points at the striped market stall.</p><dl class="help-list"><dt>Walk</dt><dd>Use WASD, arrow keys, or the green directional pad. You can also tap anywhere on the ground.</dd><dt>Interact</dt><dd>Tap Bear or a landmark to walk there. Press E, Space, or the gold A button when you’re nearby.</dd><dt>Journal</dt><dd>Press J to see today’s errands. Choose an unfinished one for Mere to walk there.</dd><dt>Rest</dt><dd>Visit the cottage door to start another day. Progress saves in this browser.</dd><dt>Music</dt><dd>Use the music button above the game for a lo-fi meadow tune.</dd></dl><button class="small-action" data-action="close">Back to the meadow</button>');
+    shell("help","How to play",'<dl class="help-list"><dt>Walk</dt><dd>Use WASD, the arrow keys, the directional pad, or tap the ground.</dd><dt>Interact</dt><dd>Tap a landmark, or press E, Space, or the gold A button nearby.</dd><dt>Explore</dt><dd>Follow the sign on the meadow’s south path to the orchard. The cottage door leads inside. Places lets you travel directly.</dd><dt>Journal</dt><dd>Press J for today’s errands. Choose one to walk there.</dd><dt>Decorate</dt><dd>Buy something from the Furnishings shelf. Inside the cottage, choose Decorate to place, move, or store it.</dd><dt>Rest</dt><dd>Visit the bed to begin another day. Progress saves in this browser.</dd><dt>Music</dt><dd>Turn on the music button for Mere’s lo-fi soundtrack.</dd></dl><button class="small-action" data-action="close">Back to the game</button>');
   }
   function visit(id){
     audio.cue("interaction");
-    if(!id){journal();return}
+    if(!id){travelMenu();return}
     if(id==="shop")shop();
-    else if(id==="cottage")cottage();
+    else if(id==="cottage")navigate("interior");
+    else if(id==="orchard-gate")navigate("orchard");
+    else if(id==="orchard-exit")navigate("meadow",{x:477,y:357});
+    else if(id==="home-exit")navigate("meadow",{x:239,y:243});
+    else if(id==="bed")bedtime();
+    else if(id==="decorate")decorate();
     else taskMenu(id);
   }
   function pulse(text){
@@ -151,16 +228,37 @@
   function controllerFlash(id){
     const node=el(id);node.classList.add("pressed");setTimeout(()=>node.classList.remove("pressed"),115);
   }
-  const actions={close,journal,shop,letter,rest,pounce};
+  const actions={close,journal,shop,letter,rest,pounce,adventure:adventureJournal,places:travelMenu,"decorate-home":decorateAtHome};
   panel.addEventListener("click",ev=>{
     const btn=ev.target.closest("button");if(!btn||btn.disabled)return;
     if(btn.dataset.action){actions[btn.dataset.action]?.();return}
-    if(btn.dataset.go){close(false);world.walkTo(btn.dataset.go);return}
-    if(btn.dataset.chore){if(btn.dataset.chore==="play")chase();else complete(btn.dataset.chore);return}
+    if(btn.dataset.travel){navigate(btn.dataset.travel);return}
+    if(btn.dataset.shelf){shop("",btn.dataset.shelf);return}
+    if(btn.hasAttribute("data-clue")){
+      const result=life.followBellClue(Number(btn.dataset.clue),page);
+      close();refresh();say("Mere",result.message,6300);
+      if(result.reward){audio.cue("points");world.celebrate("bell");pulse("+"+result.reward+" cozy pts")}
+      else if(result.ok)audio.cue("interaction");
+      return;
+    }
+    if(btn.dataset.go){goToSpot(btn.dataset.go);return}
+    if(btn.dataset.chore){
+      const id=btn.dataset.chore;
+      if(id==="play")chase();
+      else if(!orchard.start(id,{panel,shell,complete,audio}))complete(id);
+      return;
+    }
     if(btn.dataset.buy){
       const id=btn.dataset.buy,res=life.buy(id);
       if(!res.ok){shop(res.message);return}
-      close();refresh();audio.cue("buy");world.celebrate("buy");say("Mere",res.message,5900);
+      audio.cue("buy");
+      const item=life.items.find(entry=>entry.id===id);
+      if(item.category==="furniture"||id==="flower-box"){
+        newestPiece=id;
+        shell("unpacked",item.label,'<p class="note">'+esc(res.message)+'</p><div class="purchase-actions"><button class="small-action" data-action="decorate-home">Decorate at home</button><button class="small-action" data-action="shop">Keep shopping</button></div>');
+      }else{
+        close();refresh();world.celebrate("buy");say("Mere",res.message,5900);
+      }
     }
   });
   document.querySelectorAll("[data-view]").forEach(btn=>btn.addEventListener("click",()=>{const target=btn.dataset.view;if(target==="play")close();else actions[target]()}));
@@ -173,6 +271,7 @@
     }finally{button.disabled=false}
   });
   el("talk").addEventListener("click",()=>world.interact());
+  el("room-tools").addEventListener("click",()=>decorate());
   el("a-key").addEventListener("click",pressA);el("b-key").addEventListener("click",back);
   el("quick-shop").addEventListener("click",()=>shop());el("quick-journal").addEventListener("click",journal);el("help").addEventListener("click",help);
   function menuDirection(dir){
@@ -210,5 +309,5 @@
   window.addEventListener("keyup",ev=>{const dir=directions[ev.key.toLowerCase()];if(dir){world.hold(dir,false);document.querySelector('[data-dir="'+dir+'"]').classList.remove("held")}});
   window.addEventListener("blur",release);
   document.addEventListener("visibilitychange",()=>{if(document.hidden){release();world.save()}});
-  world.start(map,{near:context,visit});refresh();
+  world.start(map,{near:context,visit,scene:sceneChanged});refresh();
 })();

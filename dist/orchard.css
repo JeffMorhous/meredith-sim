@@ -1,0 +1,302 @@
+.orchard-activity [hidden] {
+  display: none;
+}
+
+.orchard-pick-board,
+.orchard-song-board {
+  padding: 10px;
+  border: 1px solid #aeb588;
+  border-radius: 5px;
+  background: #e5eac4;
+  box-shadow: inset 0 0 0 2px #f1f0d5;
+}
+
+.orchard-song-board {
+  background: #e2ebd9;
+  border-color: #a6baa1;
+}
+
+.orchard-choice-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.orchard-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid #b6bb91;
+  border-radius: 4px;
+  padding: 9px 5px 7px;
+  background: #fff9e4;
+  box-shadow: 0 2px #72885155;
+}
+
+.orchard-choice:not(:disabled):hover {
+  background: #fff2c7;
+  border-color: #86966b;
+}
+
+.orchard-choice:focus-visible,
+.orchard-song-actions button:focus-visible {
+  outline: 2px solid #456649;
+  outline-offset: 2px;
+}
+
+.orchard-choice:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.orchard-choice strong {
+  color: #465839;
+  font: 700 15px/1.1 var(--pixel);
+}
+
+.orchard-choice small {
+  color: #596551;
+  font: 12px/1.17 var(--sans);
+  text-wrap: balance;
+}
+
+.orchard-apple {
+  --fruit: #ca4941;
+  --glint: #f88d6d;
+  --shade: #96372c;
+  position: relative;
+  display: block;
+  width: 37px;
+  height: 36px;
+  margin-bottom: 1px;
+  flex: none;
+}
+
+[data-fruit="green"] .orchard-apple {
+  --fruit: #7e9e47;
+  --glint: #b5cb6b;
+  --shade: #5f7838;
+}
+
+[data-fruit="bruised"] .orchard-apple {
+  --fruit: #b15c4c;
+  --glint: #d78f6f;
+  --shade: #75453d;
+}
+
+.orchard-apple::before {
+  position: absolute;
+  top: 1px;
+  left: 17px;
+  width: 3px;
+  height: 13px;
+  content: "";
+  background: #775139;
+  box-shadow: 4px 0 #7b984e, 7px -1px #7b984e, 7px 2px #597746;
+}
+
+.orchard-apple i {
+  position: absolute;
+  inset: 9px 3px 1px;
+  background: var(--fruit);
+  box-shadow: inset 0 -5px var(--shade), inset 4px 2px var(--glint);
+  clip-path: polygon(16% 8%, 38% 8%, 38% 15%, 58% 15%, 58% 8%, 81% 8%, 81% 17%, 94% 17%, 94% 31%, 100% 31%, 100% 60%, 93% 60%, 93% 76%, 84% 76%, 84% 91%, 68% 91%, 68% 100%, 35% 100%, 35% 93%, 18% 93%, 18% 81%, 9% 81%, 9% 64%, 0 64%, 0 34%, 7% 34%, 7% 19%, 16% 19%);
+}
+
+.orchard-apple i::before {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 6px;
+  height: 3px;
+  content: "";
+  background: var(--glint);
+  box-shadow: -2px 3px var(--glint);
+}
+
+[data-fruit="bruised"] .orchard-apple i::after {
+  position: absolute;
+  right: 5px;
+  bottom: 7px;
+  width: 7px;
+  height: 6px;
+  content: "";
+  background: var(--shade);
+  box-shadow: -3px 3px var(--shade);
+}
+
+.orchard-meter,
+.orchard-song-tray {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font: 600 16px/1 var(--pixel);
+}
+
+.orchard-meter {
+  margin-top: 12px;
+}
+
+.orchard-meter div,
+.orchard-song-strip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.orchard-apple-dot {
+  width: 15px;
+  height: 14px;
+  clip-path: polygon(42% 0, 62% 0, 62% 25%, 86% 25%, 86% 36%, 100% 36%, 100% 78%, 82% 78%, 82% 100%, 21% 100%, 21% 79%, 0 79%, 0 36%, 15% 36%, 15% 25%, 42% 25%);
+  background: #a0a275;
+}
+
+.orchard-apple-dot.picked {
+  background: #be4a3d;
+}
+
+.orchard-song-tray {
+  margin-bottom: 9px;
+}
+
+.orchard-song-strip span {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 23px;
+  border: 1px solid #afbea8;
+  border-radius: 3px;
+  color: #4d674e;
+  background: #eff4e7;
+}
+
+[data-orchard-bird="bluebird"] {
+  --bird: #4389ad;
+  --wing: #7cc6e2;
+  --deep: #28566e;
+  --song-tile: #c8e7ef;
+}
+
+[data-orchard-bird="robin"] {
+  --bird: #be6259;
+  --wing: #ed9c8a;
+  --deep: #864138;
+  --song-tile: #f3d8cf;
+}
+
+[data-orchard-bird="finch"] {
+  --bird: #bc882f;
+  --wing: #edbd54;
+  --deep: #735019;
+  --song-tile: #f3e3a9;
+}
+
+.orchard-song-strip [data-orchard-bird],
+.orchard-bird-choice.singing {
+  color: var(--deep);
+  border-color: var(--deep);
+  background: var(--song-tile);
+}
+
+.orchard-bird-choice {
+  min-height: 64px;
+}
+
+.orchard-bird-choice:disabled {
+  box-shadow: none;
+}
+
+.orchard-bird-choice.singing {
+  outline: 2px solid var(--bird);
+  outline-offset: -3px;
+}
+
+.orchard-bird-choice strong span {
+  color: var(--deep);
+}
+
+.orchard-bird {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 41px;
+  height: 31px;
+}
+
+.orchard-bird::before {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 32px;
+  height: 25px;
+  content: "";
+  background: var(--bird);
+  box-shadow: inset 0 -4px var(--deep), inset 0 3px var(--wing);
+  clip-path: polygon(54% 0, 79% 0, 79% 9%, 90% 9%, 90% 23%, 100% 23%, 100% 64%, 94% 64%, 94% 86%, 79% 86%, 79% 100%, 33% 100%, 33% 91%, 19% 91%, 19% 76%, 10% 76%, 10% 62%, 0 62%, 0 30%, 14% 30%, 14% 41%, 36% 41%, 36% 19%, 44% 19%, 44% 8%, 54% 8%);
+}
+
+.orchard-bird i {
+  position: absolute;
+  top: 8px;
+  left: 26px;
+  width: 3px;
+  height: 3px;
+  background: #30392f;
+  box-shadow: -8px 10px 0 3px var(--wing), -1px 18px #956133, -9px 18px #956133;
+}
+
+.orchard-bird::after {
+  position: absolute;
+  top: 10px;
+  left: 35px;
+  width: 6px;
+  height: 4px;
+  content: "";
+  background: #dca74b;
+  clip-path: polygon(0 0, 72% 0, 100% 40%, 100% 60%, 72% 100%, 0 100%);
+}
+
+.orchard-song-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.orchard-song-actions button[aria-disabled="true"] {
+  opacity: .75;
+}
+
+.orchard-feedback {
+  min-height: 2.5em;
+  margin: 8px 0 0;
+  color: #565f49;
+  font: 13px/1.25 var(--sans);
+}
+
+@media (max-width: 550px) {
+  .orchard-pick-board,
+  .orchard-song-board {
+    padding: 6px;
+  }
+
+  .orchard-choice-row {
+    gap: 5px;
+  }
+
+  .orchard-choice {
+    padding: 5px 3px 6px;
+  }
+
+  .orchard-choice small {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orchard-choice:not(:disabled):active {
+    transform: none;
+  }
+}

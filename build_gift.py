@@ -6,6 +6,7 @@ from html.parser import HTMLParser
 import json
 import mimetypes
 from pathlib import Path
+from urllib.parse import urlsplit
 import re
 
 
@@ -71,7 +72,7 @@ class GiftPage(HTMLParser):
         self.skipping_script = False
 
     def local_file(self, path):
-        resolved = (SITE / path).resolve()
+        resolved = (SITE / urlsplit(path).path).resolve()
         resolved.relative_to(SITE)
         return resolved.read_text(encoding="utf-8")
 

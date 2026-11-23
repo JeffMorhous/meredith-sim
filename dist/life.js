@@ -53,7 +53,8 @@
       description: "Take a moment by the water.",
       location: "pond",
       reward: 16
-    }
+    },
+    ...window.CozyOrchard.chores
   ].map(Object.freeze));
 
   const items = Object.freeze([
@@ -80,10 +81,12 @@
       label: "Cottage sunroom",
       description: "Build a glass sunroom beside the cottage, with flowers and a sunny spot for Bear.",
       cost: 180
-    }
+    },
+    ...window.CozyCottage.items
   ].map(Object.freeze));
 
   const outcomes = {
+    ...window.CozyOrchard.outcomes,
     breakfast: [
       "Bear circles Mere's ankles once before settling in at the breakfast bowl.",
       "Mere sets the bowl down. Bear is already in position.",
@@ -123,6 +126,7 @@
   ];
 
   const purchaseOutcomes = {
+    ...window.CozyCottage.purchaseOutcomes,
     toy: "Mere brings home a ribbon wand. Bear watches the tassel all the way to the door.",
     "flower-box": "Mere sets the flower box by the cottage window, where the petals can catch the sun.",
     "cottage-lights": "Mere hangs the lights along the cottage. A soft glow spills over the doorstep.",
@@ -143,6 +147,21 @@
     return { x: value.x, y: value.y };
   }
 
+  const scenes = new Set(["meadow", "orchard", "interior"]);
+
+  function readDecor(value, owned) {
+    const result = {};
+    const placed = new Set();
+    for (const slot of window.CozyCottage.slots) {
+      const item = value?.[slot.id];
+      if (owned.includes(item) && !placed.has(item) && window.CozyCottage.canPlace(item, slot.id)) {
+        result[slot.id] = item;
+        placed.add(item);
+      }
+    }
+    return result;
+  }
+
   function load() {
     let saved;
     try {
@@ -153,12 +172,16 @@
 
     const data = saved && typeof saved === "object" ? saved : {};
     const points = readCount(data.points, 0, 0);
+    const owned = readIds(data.owned, items);
     return {
       day: readCount(data.day, 1, 1),
       points,
       totalPoints: Math.max(points, readCount(data.totalPoints, 0, 0)),
+      bellStage: Math.min(window.CozyOrchard.adventure.stages.length, readCount(data.bellStage, 0, 0)),
       completed: readIds(data.completed, chores),
-      owned: readIds(data.owned, items),
+      owned,
+      decor: readDecor(data.decor, owned),
+      sceneId: scenes.has(data.sceneId) ? data.sceneId : "meadow",
       position: readPosition(data.position)
     };
   }
@@ -178,6 +201,7 @@
       ...state,
       completed: [...state.completed],
       owned: [...state.owned],
+      decor: { ...state.decor },
       position: state.position && { ...state.position },
       milestone: { ...milestone, reached: state.totalPoints >= milestone.target }
     };
@@ -233,12 +257,48 @@
     return { ok: true, message: "Morning comes through the cottage window. Bear stirs." };
   }
 
-  function savePosition(x, y) {
+  function followBellClue(expectedStage, spot) {
+    const adventure = window.CozyOrchard.adventure;
+    const clue = adventure.stages[state.bellStage];
+    if (!clue || state.bellStage !== expectedStage || clue.spot !== spot || state.sceneId !== "orchard") {
+      return { ok: false, message: "Mere’s journal holds the next clue." };
+    }
+    state.bellStage++;
+    const reward = state.bellStage === adventure.stages.length ? adventure.reward : 0;
+    const before = state.totalPoints;
+    state.points += reward;
+    state.totalPoints += reward;
+    save();
+    const unlocked = before < milestone.target && state.totalPoints >= milestone.target;
+    return { ok: true, reward, message: clue.outcome + (unlocked ? " A letter for Meredith is ready in the journal." : "") };
+  }
+
+  function place(itemId, slotId) {
+    const cottage = window.CozyCottage;
+    const item = items.find(entry => entry.id === itemId);
+    if (!item || !state.owned.includes(itemId) || !cottage.slots.some(slot => cottage.canPlace(itemId, slot.id))) {
+      return { ok: false, message: "Choose a furnishing from Mere’s inventory." };
+    }
+    if (slotId !== null && !cottage.canPlace(itemId, slotId)) {
+      return { ok: false, message: "Choose a spot where this furnishing fits." };
+    }
+    const current = Object.keys(state.decor).find(slot => state.decor[slot] === itemId);
+    if (current) delete state.decor[current];
+    if (slotId !== null) state.decor[slotId] = itemId;
+    save();
+    const spot = cottage.slots.find(slot => slot.id === slotId);
+    const message = spot ? item.label + " · " + spot.label : item.label + " is back in storage.";
+    return { ok: true, message };
+  }
+
+  function savePosition(x, y, sceneId = state.sceneId) {
     const position = readPosition({ x, y });
-    if (!position || (state.position?.x === x && state.position?.y === y)) return;
+    if (!position || !scenes.has(sceneId)) return;
+    if (state.position?.x === x && state.position?.y === y && state.sceneId === sceneId) return;
     state.position = position;
+    state.sceneId = sceneId;
     save();
   }
 
-  window.CozyLife = Object.freeze({ getState, act, buy, rest, savePosition, items, chores });
+  window.CozyLife = Object.freeze({ getState, act, buy, place, rest, followBellClue, savePosition, items, chores });
 })(window);

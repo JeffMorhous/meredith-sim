@@ -1,5 +1,7 @@
 (() => {
   const paths = {
+    map: '<path d="m2 5 6-3 7 3 7-3v16l-7 3-7-3-6 3zM8 2v16m7-13v16"/>',
+    chair: '<path d="M6 13V4l2-2h8l2 2v9M4 12h16v5H4zM6 17v5m12-5v5"/>',
     gamepad: '<path d="M4 6h16l2 10-2 2-4-4H8l-4 4-2-2z"/><path d="M6 10h5m-2.5-2.5v5m6.5-2.5h.2m2.8 2h.2"/>',
     book: '<path d="M3 4h6l3 2 3-2h6v15h-6l-3 2-3-2H3zM12 6v15"/>',
     bag: '<path d="M4 8h16v13H4zM8 8V5l2-2h4l2 2v3"/>',
